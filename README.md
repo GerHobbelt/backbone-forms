@@ -71,7 +71,7 @@ A flexible, customisable form framework for Backbone.JS applications.
 ##Installation
 
 Dependencies:
-- [Backbone 0.9.2](http://documentcloud.github.com/backbone/)
+- [Backbone 0.9.10](http://documentcloud.github.com/backbone/)
 
 
 Include backbone-forms.js and backbone-forms.css:
@@ -126,7 +126,11 @@ See [schema definition](#schema-definition) for more information.
 Once the user is done with the form, call `form.commit()` to apply the updated values to the model. If there are validation errors they will be returned. 
 See [validation](#validation) for more information.
 
-    var errors = form.commit();
+    var errors = form.commit(); // runs schema validation
+
+or 
+
+    var errors = form.commit({ validate: true }); // runs schema and model validation
 
 To update a field after the form has been rendered, use `form.setValue`:
 
@@ -261,10 +265,8 @@ The following default editors are included:
 - [List](#editor-list) An editable list of items (included in a separate file: `distribution/editors/list.min.js`)
 
 
-The old jQuery editors are still included but may be moved to another repository:
-- jqueryui.List
-- jqueryui.Date (uses the jQuery UI popup datepicker)
-- jqueryui.DateTime
+NOTE:
+The old jQuery editors were broken with the changes to Backbone 0.9.10. As they were unsupported for some time they have been removed. However they are still available on previous tags (e.g. backbone-forms v0.10.0) so can be imported from there.
 
 
 
@@ -378,7 +380,7 @@ Creates and populates a `<select>` element.
     };
     
     var schema = {
-        users: { type: 'Select', options: function(callback) {
+        users: { type: 'Select', options: function(callback, editor) {
             users = db.getUsers();
             
             callback(users);
@@ -505,7 +507,6 @@ This is a special editor which is in **a separate file and must be included**:
 
     <script src="backbone-forms/distribution/adapters/backbone.bootstrap-modal.min.js" />
 
-*This list replaces the old jQueryUI list, but may need some upgrade work. The old jQueryUI List editor is still included in a separate file.*
 
 ###Attributes
 
@@ -578,7 +579,10 @@ This is a special editor which is in **a separate file and must be included**:
 <a name="validation"/>
 ##Validation
 
-There are 2 levels of validation: schema validators and the regular built-in Backbone model validation. Backbone Forms will run both when either `form.commit()` or `form.validate()` are called.
+There are 2 levels of validation: schema validators and the regular
+built-in Backbone model validation. Backbone Forms will run both when
+`form.validate()` is called. Calling `form.commit()` will run schema
+level validation by default, and can also run model validation if `{ validate: true }` is passed.
 
 
 ###Schema validation
@@ -891,7 +895,10 @@ Writing a custom editor is simple. They must extend from Backbone.Form.editors.B
 <a name="changelog"/>
 ##Changelog
 
-###master
+###0.11.0
+- Update for Backbone 0.9.10
+- Pass editor instance as second parameter to Select options function
+- Fix for jQuery 1.9
 - Don't show <label> if schema title===false (philfreo)
 - Fix change event on radio editor (DominicBoettger)
 - Fix model errors not being return by validate() (mutewinter)
