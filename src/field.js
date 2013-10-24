@@ -11,6 +11,7 @@ Form.Field = Backbone.View.extend({
    * @param {Object} options.key
    * @param {Object} options.form
    * @param {Object} [options.schema]
+   * @param {Function} [options.schema.template]
    * @param {Backbone.Model} [options.model]
    * @param {Object} [options.value]
    * @param {String} [options.idPrefix]
@@ -23,12 +24,12 @@ Form.Field = Backbone.View.extend({
     //Store important data
     _.extend(this, _.pick(options, 'form', 'key', 'model', 'value', 'idPrefix'));
 
-    //Override defaults
-    this.template = options.template || this.constructor.template;
-    this.errorClassName = options.errorClassName || this.constructor.errorClassName;
-
     //Create the full field schema, merging defaults etc.
-    this.schema = this.createSchema(options.schema);
+    var schema = this.schema = this.createSchema(options.schema);
+
+    //Override defaults
+    this.template = options.template || schema.template || this.constructor.template;
+    this.errorClassName = options.errorClassName || this.constructor.errorClassName;
 
     //Create editor
     this.editor = this.createEditor();
@@ -139,6 +140,11 @@ Form.Field = Backbone.View.extend({
   render: function() {
     var schema = this.schema,
         editor = this.editor;
+
+    //Only render the editor if Hidden
+    if (schema.type == Form.editors.Hidden) {
+      return this.setElement(editor.render().el);
+    }
 
     //Render field
     var $field = $($.trim(this.template(_.result(this, 'templateData'))));

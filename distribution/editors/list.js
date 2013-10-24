@@ -287,7 +287,7 @@
       this.value = options.value;
       this.Editor = options.Editor || Form.editors.Text;
       this.key = options.key;
-      this.template = options.template || this.constructor.template;
+      this.template = options.template || this.schema.itemTemplate || this.constructor.template;
       this.errorClassName = options.errorClassName || this.constructor.errorClassName;
       this.form = options.form;
     },
@@ -592,7 +592,7 @@
     //STATICS
     template: _.template('\
       <div><%= summary %></div>\
-    '),
+    ', null, Form.templateSettings),
 
     //The modal adapter that creates and manages the modal dialog.
     //Defaults to BootstrapModal (http://github.com/powmedia/backbone.bootstrap-modal)
@@ -644,7 +644,7 @@
       
       //Otherwise use the model
       return new (schema.model)(value).toString();
-    },
+    }
   });
 
 })(Backbone.Form);

@@ -72,6 +72,17 @@ test('creates the editor', function() {
   same(field.editor instanceof Form.editors.Text, true);
 });
 
+test('uses template defined in schema', function() {
+  var customTemplate = _.template('<div class="myField" data-editor></div>');
+
+  var field = new Field({
+    key: 'title',
+    schema: { type: 'Text', template: customTemplate }
+  });
+
+  same(field.template, customTemplate);
+});
+
 
 
 module('Field#createSchema');
@@ -231,6 +242,15 @@ module('Field#render', {
   teardown: function() {
     this.sinon.restore();
   }
+});
+
+test('only renders the editor if hidden', function() {
+  var field = new Field({
+    key: 'title',
+    schema: { type: 'Hidden' }
+  }).render();
+
+  same(field.$el.prop('tagName'), 'INPUT');
 });
 
 test('returns self', function() {
