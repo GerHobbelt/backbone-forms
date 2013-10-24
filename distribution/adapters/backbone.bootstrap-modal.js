@@ -152,10 +152,10 @@
           $el = this.$el;
 
       //Create it
-      $el.modal({
+      $el.modal(_.extend({
         keyboard: this.options.allowCancel,
         backdrop: this.options.allowCancel ? true : 'static'
-      });
+      }, this.options.modalOptions));
 
       //Focus OK button
       $el.one('shown', function() {
@@ -224,7 +224,11 @@
         return;
       }
 
-      $el.one('hidden', function() {
+      $el.one('hidden', function onHidden(e) {
+        // Ignore events propagated from interior objects, like bootstrap tooltips
+        if(e.target !== e.currentTarget){
+          return $el.one('hidden', onHidden);
+        }
         self.remove();
 
         if (self.options.content && self.options.content.trigger) {

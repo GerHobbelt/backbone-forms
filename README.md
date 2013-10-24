@@ -9,7 +9,7 @@ A flexible, customisable form framework for Backbone.JS applications.
 - Custom HTML templates
 
 
-###Example
+###Example: Quickly generate forms to edit models
 
     var User = Backbone.Model.extend({
         schema: {
@@ -22,14 +22,57 @@ A flexible, customisable form framework for Backbone.JS applications.
             notes:      { type: 'List', listType: 'Text' }
         }
     });
-    
+
     var user = new User();
-    
+
     var form = new Backbone.Form({
         model: user
     }).render();
-    
+
     $('body').append(form.el);
+
+
+###Example: Fully customise forms and templates
+
+HTML:
+```
+<script id="formTemplate" type="text/html">
+    <form>
+        <h1>New User</h1>
+        
+        <h2>Main Info</h2>
+        <div data-fields="title,name,birthday"></div>
+        
+        <h2>Account Info</h2>
+        <h3>Email</h3>
+        <div data-fields="email"></div>
+
+        <h3>Password</h3>
+        <p>Must be at least 8 characters long</p>
+        <div data-editors="password"></div>
+    </form>
+</script>
+```
+
+Javascript:
+```js
+var UserForm = Backbone.Form.extend({
+    template: _.template($('#formTemplate').html()),
+    
+    schema: {
+        title:      { type: 'Select', options: ['Mr', 'Mrs', 'Ms'] },
+        name:       'Text',
+        email:      { validators: ['required', 'email'] },
+        password:   'Password'
+    }
+});
+
+var form = new UserForm({
+    model: new User()
+}).render();
+
+$('body').append(form.el);
+```
 
 
 ###Live editable demos
@@ -45,7 +88,7 @@ A flexible, customisable form framework for Backbone.JS applications.
 ###Table of Contents:
 - [Installation](#installation)
 - [Usage](#usage)
-- [Backbone.Form](#form)  
+- [Backbone.Form](#form)
 - [Schema Definition](#schema-definition)
   - [Text](#editor-text)
   - [Checkboxes](#editor-checkboxes)
@@ -56,7 +99,7 @@ A flexible, customisable form framework for Backbone.JS applications.
   - [Date](#editor-date)
   - [DateTime](#editor-datetime)
   - [List](#editor-list)
-- [Validation](#validation)  
+- [Validation](#validation)
 - [Customising templates](#customising-templates)
 - [More](#more)
   - [Editors without forms](#editors-without-forms)
@@ -71,19 +114,18 @@ A flexible, customisable form framework for Backbone.JS applications.
 ##Installation
 
 Dependencies:
-- [Backbone 0.9.10](http://documentcloud.github.com/backbone/)
+- [Backbone 1.0](http://documentcloud.github.com/backbone/)
 
 
-Include backbone-forms.js and backbone-forms.css:
+Include backbone-forms.js:
 
     <script src="backbone-forms/distribution/backbone-forms.min.js"></script>
-    <link href="backbone-forms/distribution/templates/default.css" rel="stylesheet" />
 
 Optionally, you can include the extra editors, for example the List editor:
 
     <script src="backbone-forms/distribution/editors/list.min.js"></script>
-    
-To use a custom template pack, e.g. Bootstrap, include the relevants file after backbone-forms.js. You can remove `templates/default.css` and replace it with `templates/bootstrap.css`.
+
+To use a custom template pack, e.g. Bootstrap, include the relevant files after backbone-forms.js.
 
     <script src="backbone-forms/distribution/templates/bootstrap.js"></script>
     <link href="backbone-forms/distribution/templates/bootstrap.css" rel="stylesheet" />
@@ -99,7 +141,9 @@ Note there is also a distribution file for RequireJS / AMD.
 <a name="usage"/>
 ##Usage
 
-Define a `schema` attribute on your Backbone models. The schema keys should match the attributes that get set on the model. `type` defaults to `Text`.  When you don't need to specify any options you can use the shorthand by passing the editor name as a string.
+Forms are generated from a `schema`, which can be defined on the form itself or on a model.
+
+The schema keys should match the attributes that get set on the model. `type` defaults to `Text`.  When you don't need to specify any options you can use the shorthand by passing the editor name as a string.
 See [schema definition](#schema-definition) for more information.
 
     var User = Backbone.Model.extend({
@@ -113,22 +157,22 @@ See [schema definition](#schema-definition) for more information.
             notes:      { type: 'List', listType: 'Text' }
         }
     });
-    
+
     var user = new User();
-    
+
     var form = new Backbone.Form({
         model: user
     }).render();
-    
+
     $('body').append(form.el);
 
 
-Once the user is done with the form, call `form.commit()` to apply the updated values to the model. If there are validation errors they will be returned. 
+Once the user is done with the form, call `form.commit()` to apply the updated values to the model. If there are validation errors they will be returned.
 See [validation](#validation) for more information.
 
     var errors = form.commit(); // runs schema validation
 
-or 
+or
 
     var errors = form.commit({ validate: true }); // runs schema and model validation
 
@@ -144,23 +188,23 @@ To update a field after the form has been rendered, use `form.setValue`:
 You can create a form without tying it to a model. For example, to create a form for a simple object of data:
 
     var form = new Backbone.Form({
-        //Data to populate the form with
-        data: {
-          id: 123,
-          name: 'Rod Kimble',
-          password: 'cool beans'
-        },
-        
         //Schema
         schema: {
             id:         'Number',
             name:       'Text',
             password:   'Password'
+        },
+        
+        //Data to populate the form with
+        data: {
+          id: 123,
+          name: 'Rod Kimble',
+          password: 'cool beans'
         }
     }).render();
 
 Then instead of `form.commit()`, do:
-    
+
     var data = form.getValue(); //Returns object with new form values
 
 
@@ -203,18 +247,9 @@ If a form has a model attached to it, the initial values are taken from the mode
 
 - **`template`**
 
-  The template name to use for generating the form. E.g.:
+  The compiled template to use for generating the form.
 
-        Backbone.Form.setTemplates({
-            customForm: '<form class="custom-form">{{fieldsets}}</form>'
-        });
-    
-        var form = new Backbone.Form({
-            model: user,
-            template: 'customForm'
-        });
-    
-    
+
 ###Events
 
 `Backbone.Form` fires the following events:
@@ -232,10 +267,10 @@ If a form has a model attached to it, the initial values are taken from the mode
   This event is triggered whenever this form loses focus, i.e. when the input of an editor within this form stops being the `document.activeElement`.
 
 - **`<key>:<event>`**
-  
+
   Events fired by editors within this form will bubble up and be fired as `<key>:<event>`.
 
-        form.on('title:change', function(form, titleEditor) { 
+        form.on('title:change', function(form, titleEditor) {
             console.log('Title changed to "' + titleEditor.getValue() + '".');
         });
 
@@ -263,10 +298,6 @@ The following default editors are included:
 - [Date](#editor-date)
 - [DateTime](#editor-datetime)
 - [List](#editor-list) An editable list of items (included in a separate file: `distribution/editors/list.min.js`)
-
-
-NOTE:
-The old jQuery editors were broken with the changes to Backbone 0.9.10. As they were unsupported for some time they have been removed. However they are still available on previous tags (e.g. backbone-forms v0.10.0) so can be imported from there.
 
 
 
@@ -354,16 +385,16 @@ Creates and populates a `<select>` element.
   Can be either:
     - String of HTML `<option>`s
     - Array of strings/numbers
+    - An array of option groups in the form `[{group: 'Option Group Label', options: <any of the forms from this list (except the option groups)>}]`
     - Array of objects in the form `{ val: 123, label: 'Text' }`
     - A Backbone collection
-    - A function that calls back with one of the above 
+    - A function that calls back with one of the above
 
   **Backbone collection notes**
 
   If using a Backbone collection as the `options` attribute, models in the collection must implement a `toString()` method. This populates the label of the `<option>`. The ID of the model populates the `value` attribute.
 
   If there are no models in the collection, it will be `fetch()`ed.
-
 
 ####Methods
 
@@ -374,17 +405,26 @@ Creates and populates a `<select>` element.
 
 
 ####Examples
-    
+
     var schema = {
         country: { type: 'Select', options: new CountryCollection() }
     };
-    
+
     var schema = {
         users: { type: 'Select', options: function(callback, editor) {
             users = db.getUsers();
-            
+
             callback(users);
         }}
+    }
+
+    // Option groups (each group's option can be specified differently)
+    var schema = {
+      options: [
+        { group: 'Cities', options: ['Paris', 'Beijing']},
+        { group: 'Countries', options: new Collection(objects)},
+        { group: 'Food', options: '<option>Bread</option>'}
+      ]
     }
 
 
@@ -414,7 +454,7 @@ The Object editor creates an embedded child form representing a Javascript objec
 ###Events
 
 - **`<key>:<event>`**
-  
+
   Events fired by editors within this Object editor will bubble up and be fired as `<key>:<event>`.
 
 ####Examples
@@ -426,7 +466,7 @@ The Object editor creates an embedded child form representing a Javascript objec
             country: { 'Select', options: countries }
         }}
     };
-    
+
     addressEditor.on('zip:change', function(addressEditor, zipEditor) {
         console.log('Zip changed to "' + zipEditor.getValue() + '".');
     });
@@ -446,7 +486,7 @@ Used to embed models within models.  Similar to the Object editor, but adds vali
 ###Events
 
 - **`<key>:<event>`**
-  
+
   Events fired by editors within this NestedModel editor will bubble up and be fired as `<key>:<event>`.
 
 ####Examples
@@ -454,11 +494,11 @@ Used to embed models within models.  Similar to the Object editor, but adds vali
     var schema = {
         address: { type: 'NestedModel', model: Address }
     };
-    
+
     addressEditor.on('zip:change', function(addressEditor, zipEditor) {
         console.log('Zip changed to "' + zipEditor.getValue() + '".');
     });
-    
+
 
 
 <a name="editor-date"/>
@@ -479,7 +519,7 @@ Creates `<select>`s for date, month and year.
 You can customise the way this editor behaves, throughout your app:
 
     var editors = Backbone.Form.editors;
-    
+
     editors.Date.showMonthNames = false; //Defaults to true
     editors.Date.monthNames = ['Jan', 'Feb', ...] //Defaults to full month names in English
 
@@ -532,7 +572,7 @@ This is a special editor which is in **a separate file and must be included**:
 - **`listItemTemplate`**
 
   Name of the template to hold the list item (including the remove item button).
-  
+
   Optional, defaults to 'listItem'
 
 
@@ -547,31 +587,31 @@ This is a special editor which is in **a separate file and must be included**:
   This event is triggered when an existing item is removed from the list.
 
 - **`item:<event>`**
-  
+
   Events fired by any item's editor will bubble up and be fired as `item:<event>`.
 
 ####Examples
-    
+
     function userToName(user) {
         return user.firstName + ' ' + user.lastName;
     }
-    
+
     var schema = {
         users: { type: 'List', itemType: 'Object', itemToString: userToName }
     };
-    
+
     listEditor.on('add', function(listEditor, itemEditor) {
         console.log('User with first name "' + itemEditor.getValue().firstName + '" added.');
     });
-    
+
     listEditor.on('item:focus', function(listEditor, itemEditor) {
         console.log('User "' + userToName(itemEditor.getValue()) + '" has been given focus.');
     });
-    
+
     listEditor.on('item:lastName:change', function(listEditor, itemEditor, lastNameEditor) {
         console.log('Last name for user "' + itemEditor.getValue().firstName + '" changed to "' + lastNameEditor.getValue() +'".');
     });
-    
+
 [Back to top](#top)
 
 
@@ -607,18 +647,18 @@ Validators can be defined in several ways:
     var schema = {
         //Built-in validator
         name: { validators: ['required'] },
-        
+
         //Multiple built-in validators
         email: { validators: ['required', 'email'] },
-        
+
         //Built-in editors with options:
         password: { validators: [
             { type: 'match', field: 'passwordConfirm', message: 'Passwords must match!' }
         ] },
-        
+
         //Regular expression
         foo: { validators: [/foo/] },
-        
+
         //Custom function
         username: { validators: [
             function checkUsername(value, formValues) {
@@ -626,7 +666,7 @@ Validators can be defined in several ways:
                     type: 'username',
                     message: 'Usernames must be at least 3 characters long'
                 };
-                
+
                 if (value.length < 3) return err;
             }
         ] }
@@ -654,9 +694,9 @@ After including the Backbone Forms file, you can override the default error mess
 {{mustache}} tags are supported; they will be replaced with the options passed into the validator configuration object. `{{value}}` is a special tag which is passed the current field value.
 
     Backbone.Form.validators.errMessages.required = 'Please enter a value for this field.';
-    
+
     Backbone.Form.validators.errMessages.match = 'This value must match the value of {{field}}';
-    
+
     Backbone.Form.validators.errMessages.email = '{{value}} is an invalid email address.';
 
 You can also override the error message on a field by field basis by passing the `message` option in the validator config.
@@ -669,9 +709,9 @@ If your models have a `validate()` method the errors will be added to the error 
     var User = Backbone.Model.extend({
         validate: function(attrs) {
             var errs = {};
-            
+
             if (usernameTaken(attrs.username)) errs.username = 'The username is taken'
-            
+
             if !_.isEmpty(errs) return errs;
         }
     })
@@ -690,7 +730,7 @@ If you model provides a `validate` method, then this will be called when you cal
     var schema = {
         name: { validators: ['required']
     }
-    
+
     var errors = form.commit();
 
 [Back to top](#top)
@@ -702,49 +742,34 @@ If you model provides a `validate` method, then this will be called when you cal
 
 Backbone-Forms comes with a few options for rendering HTML. To use another template pack, such as for [Bootstrap](http://twitter.github.com/bootstrap/), just include the .js file from the `templates` folder, after including `backbone-forms.js`.
 
-You can use your own custom templates by passing your templates (in Mustache syntax) and class names into `Backbone.Form.setTemplates()`. See the included templates files for examples.
+You can change all the default templates by copying the included `distribution/templates/bootstrap.js` file and adapting that. Placeholders are the `data-xxx` attributes, e.g. `data-fieldsets`, `data-fields` and `data-editors`.
 
-You can include different field templates and then use them on a field-by-field basis by passing the `template` option in the field schema.
+To customise forms even further you can pass in a template to the form instance or extend the form and specify the template, e.g.:
 
-####Example
+```
+<script id="formTemplate" type="text/html">
+    <form>
+        <h1>Edit profile</h1>
+        
+        <h2>Name</h2>
+        <div data-editors="firstName"><!-- firstName editor will be added here --></div>
+        <div data-editors="lastName"><!-- lastName editor will be added here --></div>
+        
+        <h2>Password</h2>
+        <div data-editors="password">
+            <div class="notes">Must be at least 7 characters:</div>
+            <!-- password editor will be added here -->
+        </div>
+    </form>
+</script>
+```
 
-    var templates = {
-      //field is the default template used
-      field: '\
-        <div>\
-          <label for="{{id}}">{{title}}</label>\
-          <div>{{editor}}</div> <div>{{help}}</div>\
-        </div>\
-      ',
-    
-      //Specify an alternate field template
-      altField: '<div class="altField">{{editor}}</div>'
-    };
-    
-    //Set the templates
-    Backbone.Form.setTemplates(templates, classNames);
-    
-    var schema = {
-      age: { type: 'Number' }, //Uses the default 'field' template
-      name: { template: 'altField' } //Uses the 'altField' template
-    };
-
-
-####Using custom variables in templates
-You can pass your own template data into templates by overriding the Form.Field.renderingContext method with your own locals.
-
-[Back to top](#top)
-
-
-
-<a name="changing-template-compiler"/>
-###Changing template compiler
-
-You can use your own custom template compiler, like [Handlebars](http://handlebarsjs.com/) by passing a reference to the function into `Backbone.Form.setTemplateCompiler()`.
-
-####Example
-
-    Backbone.Form.setTemplateCompiler(Handlebars.compile);
+```js
+var form = new Backbone.Form({
+    template: _.template($('#formTpl').html()),
+    model: new UserModel() //defined elsewhere
+});
+```
 
 [Back to top](#top)
 
@@ -756,14 +781,14 @@ You can use your own custom template compiler, like [Handlebars](http://handleba
 <a name="editors-without-forms"/>
 ###Editors without forms
 
-You can add editors by themselves, without being part of a form. For example: 
+You can add editors by themselves, without being part of a form. For example:
 
     var select = new Backbone.Form.editors.Select({
         model: user,
         key: 'country',
         options: getCountries()
     }).render();
-    
+
     //When done, apply selection to model:
     select.commit();
 
@@ -787,7 +812,7 @@ However, due to Backbone's lack of support for nested model attributes, getting 
             }}
         }
     });
-    
+
     var form = new Backbone.Form({
         model: new Model,
         fields: ['title', 'author.id', 'author.name.last']
@@ -812,11 +837,11 @@ The following shorthand is also valid:
 ###Custom editors
 
 Writing a custom editor is simple. They must extend from Backbone.Form.editors.Base.
-    
+
     var CustomEditor = Backbone.Form.editors.Base.extend({
-        
+
         tagName: 'input',
-        
+
         events: {
             'change': function() {
                 // The 'change' event should be triggered whenever something happens
@@ -836,40 +861,40 @@ Writing a custom editor is simple. They must extend from Backbone.Form.editors.B
                 // This call automatically sets `this.hasFocus` to `false`.
             }
         },
-        
+
         initialize: function(options) {
             // Call parent constructor
             Backbone.Form.editors.Base.prototype.initialize.call(this, options);
-            
+
             // Custom setup code.
             if (this.schema.customParam) this.doSomething();
         },
-        
+
         render: function() {
             this.setValue(this.value);
-            
+
             return this;
         },
-        
+
         getValue: function() {
             return this.$el.val();
         },
-        
+
         setValue: function(value) {
             this.$el.val(value);
         },
-        
+
         focus: function() {
             if (this.hasFocus) return;
-            
+
             // This method call should result in an input within this edior
             // becoming the `document.activeElement`.
             // This, in turn, should result in this editor's `focus` event
-            // being triggered, setting `this.hasFocus` to `true`. 
+            // being triggered, setting `this.hasFocus` to `true`.
             // See above for more detail.
             this.$el.focus();
         },
-        
+
         blur: function() {
             if (!this.hasFocus) return;
 
@@ -894,6 +919,12 @@ Writing a custom editor is simple. They must extend from Backbone.Form.editors.B
 
 <a name="changelog"/>
 ##Changelog
+
+###0.12.0
+- Update for Backbone 1.0
+- Overhaul templating and rendering
+- List: Set focus on newly added simple list items
+- Select: Add option group support (khepin)
 
 ###0.11.0
 - Update for Backbone 0.9.10
